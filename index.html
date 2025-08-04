@@ -6,12 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Golf Tournament Payout Calculator</title>
 
+    <!-- manifest and icons -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192.png">
+    <meta name="theme-color" content="#2563eb">
+
+    <!-- iOS install support -->
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- htmx -->
     <script src="https://unpkg.com/htmx.org@1.9.4"></script>
 </head>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js')
+            .then(() => console.log('Service Worker registered'))
+            .catch((err) => console.error('Service Worker registration failed', err));
+    }
+</script>
 
 <body class="h-full flex flex-col items-center justify-start p-6">
 

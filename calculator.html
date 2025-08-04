@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Golf Tournament Payout Calculator</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- htmx -->
+  <script src="https://unpkg.com/htmx.org@1.9.4"></script>
+</head>
+<body class="h-full flex flex-col items-center justify-start p-6">
+
+  <div class="w-full max-w-xl bg-white shadow-md rounded-lg p-6">
+    <h1 class="text-2xl font-bold mb-4 text-center">Payout Calculator</h1>
+
+    <form id="payout-form" class="space-y-4">
+      <div>
+        <label class="block font-semibold">Net Entry Fee (per player)</label>
+        <input type="number" name="netFee" step="0.01" class="mt-1 w-full p-2 border rounded" required>
+      </div>
+      <div>
+        <label class="block font-semibold">Number of Players</label>
+        <input type="number" name="numPlayers" class="mt-1 w-full p-2 border rounded" required>
+      </div>
+      <div>
+        <label class="block font-semibold">Minimum % of Field Paid Out</label>
+        <select name="percentPaid" class="mt-1 w-full p-2 border rounded">
+          <option value="40">$40</option>
+          <option value="45" selected>$45</option>
+        </select>
+      </div>
+      <div>
+        <label class="block font-semibold">Round Payouts To Nearest</label>
+        <select name="roundTo" class="mt-1 w-full p-2 border rounded">
+          <option value="1">$1</option>
+          <option value="2">$2</option>
+          <option value="5" selected>$5</option>
+        </select>
+      </div>
+      <div>
+        <label class="block font-semibold">Payout Curve</label>
+        <select name="payoutCurve" class="mt-1 w-full p-2 border rounded">
+          <option value="flat">Flat - Am</option>
+          <option value="mid" selected>Mid - Am</option>
+          <option value="steep">Steep - Am</option>
+        </select>
+      </div>
+    </form>
+  </div>
+
+  <div id="results" class="w-full max-w-xl mt-8"></div>
+<script>
+  const payoutCurves = {
+    flat:  { C: 0.297862, b: -0.357727 },
+    mid:   { C: 0.524301, b: -0.477000 },
+    steep: { C: 0.693787, b: -0.535633 }
+  };
+
+  function roundToNearest(amount, nearest) {
+    return Math.round(amount / nearest) * nearest;
+  }
+
+  function generatePDGAPayouts(totalPayout, numPaid, curve) {
+    const { C, b } = payoutCurves[curve];
+
+    const rawPercents = Array.from({ length: numPaid }, (_, i) =>
+      C * Math.pow(numPaid * (i + 1), b)
+    );
+
+    const totalPercent = rawPercents.reduce((a, b) => a + b, 0);
+    return rawPercents.map(p => (p / totalPercent) * totalPayout);
+  }
+
+  function calculatePayouts() {
+    const form = document.getElementById("payout-form");
+
+    const netFee = parseFloat(form.querySelector('[name="netFee"]').value);
+    const numPlayers = parseInt(form.querySelector('[name="numPlayers"]').value);
+    const percentPaid = parseFloat(form.querySelector('[name="percentPaid"]').value);
+    const roundTo = parseInt(form.querySelector('[name="roundTo"]').value);
+    const payoutCurve = form.querySelector('[name="payoutCurve"]').value;
+
+    if (
+      isNaN(netFee) || netFee <= 0 ||
+      isNaN(numPlayers) || numPlayers <= 0 ||
+      isNaN(percentPaid) || percentPaid <= 0
+    ) {
+      document.getElementById("results").innerHTML = "";
+      return;
+    }
+
+    const totalPayout = netFee * numPlayers;
+    const numPaid = Math.ceil((percentPaid / 100) * numPlayers);
+
+    const rawPayouts = generatePDGAPayouts(totalPayout, numPaid, payoutCurve);
+    const roundedPayouts = rawPayouts.map(p => roundToNearest(p, roundTo));
+
+    const roundedTotal = roundedPayouts.reduce((a, b) => a + b, 0).toFixed(2);
+    const actualTotal = rawPayouts.reduce((a, b) => a + b, 0).toFixed(2);
+
+    const rows = roundedPayouts.map((amt, i) =>
+      `<tr class="border-t"><td class="p-2 text-center font-medium">#${i + 1}</td><td class="p-2 text-right">$${amt.toFixed(2)}</td></tr>`
+    ).join("");
+
+    document.getElementById("results").innerHTML = `
+      <div class="bg-white shadow-md rounded-lg p-6">
+        <h2 class="text-xl font-bold mb-4 text-center">Payout Table</h2>
+        <table class="w-full table-auto border-collapse">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="p-2 text-left">Place</th>
+              <th class="p-2 text-right">Payout</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p class="mt-4 text-center text-sm text-gray-600">
+          Total (rounded): <strong>$${roundedTotal}</strong><br>
+          Total (raw): <strong>$${actualTotal}</strong>
+        </p>
+      </div>
+    `;
+  }
+
+  // Watch all changes in the form
+  document.getElementById("payout-form").addEventListener("input", calculatePayouts);
+</script>
+
+</body>
+</html>

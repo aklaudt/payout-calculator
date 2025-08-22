@@ -37,9 +37,13 @@
         <h1 class="text-2xl font-bold mb-4 text-center">Payout Calculator</h1>
 
         <div id="payout-form" class="space-y-4">
+	     <div>
+		 <label class="block font-semibold">Added Cash</label>
+		 <input type="number" name="addedCash" step="1" value="0" class="mt-1 w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-white border-gray-300 dark:border-gray-600" />
+	     </div>
             <div>
                 <label class="block font-semibold">Net Entry Fee (per player)</label>
-                <input type="number" name="netFee" step="0.01"
+                <input type="number" name="netFee" step="1"
                     class="mt-1 w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-white border-gray-300 dark:border-gray-600"
                     required>
             </div>
@@ -54,7 +58,8 @@
                 <select name="percentPaid"
                     class="mt-1 w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-white border-gray-300 dark:border-gray-600">
                     <option value="33">33%</option>
-                    <option value="45" selected>45%</option>
+                    <option value="40" selected>40%</option>
+                    <option value="45">45%</option>
                 </select>
             </div>
             <div>
@@ -70,9 +75,14 @@
                 <label class="block font-semibold">Payout Curve</label>
                 <select name="payoutCurve"
                     class="mt-1 w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-white border-gray-300 dark:border-gray-600">
-                    <option value="flat">Flat - Am</option>
-                    <option value="mid" selected>Mid - Am</option>
-                    <option value="steep">Steep - Am</option>
+		    <option value="flat_am">Flat - Am</option>
+		    <option value="mid_am">Mid - Am</option>
+		    <option value="steep_am">Steep - Am</option>
+		    <option value="flat_pro">Flat - Pro</option>
+		    <option value="midflat_pro" selected>Midflat - Pro</option>
+		    <option value="mid_pro">Mid - Pro</option>
+		    <option value="midsteep_pro">Midsteep - Pro</option>
+		    <option value="steep_pro">Steep - Pro</option>
                 </select>
             </div>
         </div>
@@ -81,20 +91,19 @@
     <div id="results" class="w-full max-w-xl mt-8"></div>
 
     <script>
-        const payoutCurves = {
-            flat: {
-                C: 0.297862,
-                b: -0.357727
-            },
-            mid: {
-                C: 0.524301,
-                b: -0.477000
-            },
-            steep: {
-                C: 0.693787,
-                b: -0.535633
-            }
-        };
+	const payoutCurves = {
+	  // Amateur Curves
+	  flat_am:     { C: 0.297862,  b: -0.357727 },
+	  mid_am:      { C: 0.524301,  b: -0.477    },
+	  steep_am:    { C: 0.693787,  b: -0.535633 },
+
+	  // Pro Curves
+	  flat_pro:       { C: 0.693787,  b: -0.535633 },
+	  midflat_pro:    { C: 0.913054,  b: -0.5937   },
+	  mid_pro:        { C: 1.25866,   b: -0.663369 },
+	  midsteep_pro:   { C: 1.735253,  b: -0.733834 },
+	  steep_pro:      { C: 3.074314,  b: -0.861387 }
+	};
 
         function roundToNearest(amount, nearest) {
             return Math.round(amount / nearest) * nearest;
@@ -117,6 +126,7 @@
         function calculatePayouts() {
             const form = document.getElementById("payout-form");
 
+            const addedCash = parseFloat(form.querySelector('[name="addedCash"]').value);
             const netFee = parseFloat(form.querySelector('[name="netFee"]').value);
             const numPlayers = parseInt(form.querySelector('[name="numPlayers"]').value);
             const percentPaid = parseFloat(form.querySelector('[name="percentPaid"]').value);
@@ -132,7 +142,7 @@
                 return;
             }
 
-            const totalPayout = netFee * numPlayers;
+            const totalPayout = (netFee * numPlayers) + addedCash;
             const numPaid = Math.ceil((percentPaid / 100) * numPlayers);
 
             const rawPayouts = generatePDGAPayouts(totalPayout, numPaid, payoutCurve);
